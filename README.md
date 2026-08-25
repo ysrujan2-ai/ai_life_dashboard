@@ -1,17 +1,50 @@
-# ai_life_dashboard
+# AI Life Dashboard
 
-A new Flutter project.
+A personal productivity dashboard built with Flutter to help manage daily tasks, focus sessions, and productivity statistics in one place.
 
-## Getting Started
+## 🚀 Current Features
 
-This project is a starting point for a Flutter application.
+- ✅ Create tasks
+- ✅ Edit tasks
+- ✅ Delete tasks
+- ✅ Mark tasks as completed
+- ✅ Organize tasks by category
+- ✅ Persistent task storage
+- ✅ Focus timer
+- ✅ Focus session tracking
+- ✅ Persistent focus statistics
+- ✅ Productivity progress tracking
 
-A few resources to get you started if this is your first Flutter project:
+## 🛠️ Tech Stack
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- Flutter
+- Dart
+- SharedPreferences
+- Android
+- Git & GitHub
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 📱 Project Status
+
+**Active Development**
+
+The application is being developed incrementally, with new features and improvements added through version-controlled development.
+
+### Current Milestone
+
+**Milestone 1 — Core Productivity System**
+
+- Task management
+- Local data persistence
+- Focus timer
+- Focus statistics
+- Physical-device testing
+
+## 🗂️ Project Structure
+
+```text
+lib/
+├── models/
+│   └── task.dart
+├── services/
+│   └── storage_service.dart
+└── main.dart
