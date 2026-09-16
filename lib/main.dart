@@ -38,11 +38,21 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final StorageService _storageService = StorageService();
   final List<Task> tasks = [
-    Task(title: 'Learn Java Arrays', category: 'Study', completed: true),
+    Task(
+      title: 'Learn Java Arrays',
+      category: 'Study',
+      completed: true,
+      completedAt: DateTime.now(),
+    ),
     Task(title: 'Solve 2 DSA Problems', category: 'Study', completed: false),
     Task(title: 'Work on Project', category: 'Project', completed: false),
     Task(title: 'Exercise', category: 'Health', completed: false),
-    Task(title: 'Read 20 Pages', category: 'Study', completed: true),
+    Task(
+      title: 'Read 20 Pages',
+      category: 'Study',
+      completed: true,
+      completedAt: DateTime.now(),
+    ),
     Task(title: 'Meditation', category: 'Health', completed: false),
   ];
 
@@ -56,6 +66,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> loadSavedFocusStats() async {
     final savedStats = await _storageService.loadFocusStats();
 
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       completedFocusSessions = savedStats['sessions'] ?? 0;
       totalFocusSeconds = savedStats['focusSeconds'] ?? 0;
@@ -65,13 +79,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> loadSavedTasks() async {
     final savedTasks = await _storageService.loadTasks();
 
-    if (savedTasks.isNotEmpty) {
-      setState(() {
-        tasks
-          ..clear()
-          ..addAll(savedTasks);
-      });
+    if (!mounted || savedTasks.isEmpty) {
+      return;
     }
+
+    setState(() {
+      tasks
+        ..clear()
+        ..addAll(savedTasks);
+    });
   }
 
   final TextEditingController taskController = TextEditingController();
@@ -96,6 +112,42 @@ class _HomeScreenState extends State<HomeScreen> {
     return (completed / tasks.length) * 100;
   }
 
+  List<int> get weeklyCompletedTasks {
+    final today = DateTime.now();
+
+    final daysSinceSunday = today.weekday % 7;
+
+    final sunday = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).subtract(Duration(days: daysSinceSunday));
+
+    final counts = List<int>.filled(7, 0);
+
+    for (final task in tasks) {
+      final completedAt = task.completedAt;
+
+      if (completedAt == null) {
+        continue;
+      }
+
+      final completedDate = DateTime(
+        completedAt.year,
+        completedAt.month,
+        completedAt.day,
+      );
+
+      final difference = completedDate.difference(sunday).inDays;
+
+      if (difference >= 0 && difference < 7) {
+        counts[difference]++;
+      }
+    }
+
+    return counts;
+  }
+
   String get formattedFocusTime {
     final minutes = totalFocusSeconds ~/ 60;
     final hours = minutes ~/ 60;
@@ -111,7 +163,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void toggleTask(int index) {
     setState(() {
       tasks[index].completed = !tasks[index].completed;
+
+      if (tasks[index].completed) {
+        tasks[index].completedAt = DateTime.now();
+      } else {
+        tasks[index].completedAt = null;
+      }
     });
+
     _storageService.saveTasks(tasks);
   }
 
@@ -144,6 +203,10 @@ class _HomeScreenState extends State<HomeScreen> {
           sessions: completedFocusSessions,
           focusSeconds: totalFocusSeconds,
         );
+
+        if (!mounted) {
+          return;
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Focus session completed! 🎉')),
@@ -357,6 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    focusTimer?.cancel();
     taskController.dispose();
     editTaskController.dispose();
     super.dispose();
@@ -542,7 +606,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       borderRadius: BorderRadius.circular(22),
                       border: Border.all(
-                        color: const Color(0xFF6C4DFF).withOpacity(0.35),
+                        color: const Color.fromRGBO(108, 77, 255, 0.35),
                       ),
                     ),
                     child: Row(
@@ -631,86 +695,67 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             )
-          : Center(
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Focus Sessions',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    'Weekly Task Completion',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '$completedFocusSessions',
-                    style: const TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
+
+                  const SizedBox(height: 6),
 
                   const Text(
-                    'Tasks Completed',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    'Tasks completed from Sunday to Saturday',
+                    style: TextStyle(fontSize: 13, color: Colors.white60),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-                  Text(
-                    '$completedTasks',
-                    style: const TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
+                  Container(
+                    height: 280,
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(12, 18, 12, 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF101728),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white12),
                     ),
-                  ),
-                  const SizedBox(height: 30),
-
-                  const Text(
-                    'Completion Rate',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    child: WeeklyTaskChart(values: weeklyCompletedTasks),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 28),
 
-                  Text(
-                    '${completionRate.toStringAsFixed(0)}%',
-                    style: const TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-
-                  const Text(
-                    'Total Tasks',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  _StatValue(
+                    label: 'Focus Sessions',
+                    value: '$completedFocusSessions',
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 24),
 
-                  Text(
-                    '${tasks.length}',
-                    style: const TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-
-                  const Text(
-                    'Focus Time',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  _StatValue(
+                    label: 'Tasks Completed',
+                    value: '$completedTasks',
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 24),
 
-                  Text(
-                    formattedFocusTime,
-                    style: const TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  _StatValue(
+                    label: 'Completion Rate',
+                    value: '${completionRate.toStringAsFixed(0)}%',
                   ),
+
+                  const SizedBox(height: 24),
+
+                  _StatValue(label: 'Total Tasks', value: '${tasks.length}'),
+
+                  const SizedBox(height: 24),
+
+                  _StatValue(label: 'Focus Time', value: formattedFocusTime),
+
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -772,6 +817,7 @@ class TaskCard extends StatelessWidget {
     required this.onLongPress,
   });
 
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
@@ -808,10 +854,10 @@ class TaskCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: category == 'Study'
-                    ? Colors.blue.withOpacity(0.15)
+                    ? Colors.blue.withAlpha(38)
                     : category == 'Project'
-                    ? Colors.purple.withOpacity(0.15)
-                    : Colors.green.withOpacity(0.15),
+                    ? Colors.purple.withAlpha(38)
+                    : Colors.green.withAlpha(38),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -830,5 +876,185 @@ class TaskCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _StatValue extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _StatValue({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF101728),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 16, color: Colors.white70),
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class WeeklyTaskChart extends StatelessWidget {
+  final List<int> values;
+
+  const WeeklyTaskChart({super.key, required this.values});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _WeeklyTaskChartPainter(values),
+      child: const SizedBox.expand(),
+    );
+  }
+}
+
+class _WeeklyTaskChartPainter extends CustomPainter {
+  final List<int> values;
+
+  _WeeklyTaskChartPainter(this.values);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    final maxValue = values.isEmpty
+        ? 0
+        : values.reduce((a, b) => a > b ? a : b);
+
+    // Keep enough headroom for low weekly counts while scaling up
+    // in clean steps as the number of completed tasks grows.
+    final chartMax = maxValue <= 5 ? 5 : ((maxValue + 4) ~/ 5) * 5;
+
+    const leftPadding = 28.0;
+    const rightPadding = 8.0;
+    const topPadding = 10.0;
+    const bottomPadding = 30.0;
+
+    final chartWidth = size.width - leftPadding - rightPadding;
+    final chartHeight = size.height - topPadding - bottomPadding;
+
+    final gridPaint = Paint()
+      ..color = Colors.white12
+      ..strokeWidth = 1;
+
+    final axisPaint = Paint()
+      ..color = Colors.white24
+      ..strokeWidth = 1;
+
+    final barPaint = Paint()..color = const Color(0xFF6C4DFF);
+
+    final labelStyle = const TextStyle(color: Colors.white60, fontSize: 11);
+
+    final valueStyle = const TextStyle(
+      color: Colors.white70,
+      fontSize: 10,
+      fontWeight: FontWeight.bold,
+    );
+
+    final gridLines = chartMax < 4 ? chartMax : 4;
+
+    for (var i = 0; i <= gridLines; i++) {
+      final y = topPadding + chartHeight - (chartHeight * i / gridLines);
+
+      canvas.drawLine(
+        Offset(leftPadding, y),
+        Offset(size.width - rightPadding, y),
+        gridPaint,
+      );
+
+      final gridValue = (chartMax * i / gridLines).round();
+
+      final painter = TextPainter(
+        text: TextSpan(text: '$gridValue', style: labelStyle),
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      painter.paint(
+        canvas,
+        Offset(leftPadding - painter.width - 6, y - painter.height / 2),
+      );
+    }
+
+    canvas.drawLine(
+      Offset(leftPadding, topPadding),
+      Offset(leftPadding, topPadding + chartHeight),
+      axisPaint,
+    );
+
+    canvas.drawLine(
+      Offset(leftPadding, topPadding + chartHeight),
+      Offset(size.width - rightPadding, topPadding + chartHeight),
+      axisPaint,
+    );
+
+    final slotWidth = chartWidth / 7;
+    final barWidth = slotWidth * 0.48;
+
+    for (var i = 0; i < 7; i++) {
+      final value = i < values.length ? values[i] : 0;
+      final barHeight = chartHeight * value / chartMax;
+
+      final xCenter = leftPadding + slotWidth * i + slotWidth / 2;
+      final left = xCenter - barWidth / 2;
+      final top = topPadding + chartHeight - barHeight;
+
+      final radius = Radius.circular(barWidth > 10 ? 8 : barWidth / 2);
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(left, top, barWidth, barHeight),
+          radius,
+        ),
+        barPaint,
+      );
+
+      if (value > 0) {
+        final valuePainter = TextPainter(
+          text: TextSpan(text: '$value', style: valueStyle),
+          textDirection: TextDirection.ltr,
+        )..layout();
+
+        valuePainter.paint(
+          canvas,
+          Offset(
+            xCenter - valuePainter.width / 2,
+            top - valuePainter.height - 4,
+          ),
+        );
+      }
+
+      final dayPainter = TextPainter(
+        text: TextSpan(text: days[i], style: labelStyle),
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      dayPainter.paint(
+        canvas,
+        Offset(xCenter - dayPainter.width / 2, topPadding + chartHeight + 8),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _WeeklyTaskChartPainter oldDelegate) {
+    return oldDelegate.values != values;
   }
 }

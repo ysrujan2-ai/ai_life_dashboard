@@ -15,6 +15,7 @@ class StorageService {
         'title': task.title,
         'category': task.category,
         'completed': task.completed,
+        'completedAt': task.completedAt?.toIso8601String(),
       };
     }).toList();
 
@@ -35,6 +36,9 @@ class StorageService {
         title: item['title'],
         category: item['category'],
         completed: item['completed'],
+        completedAt: item['completedAt'] != null
+            ? DateTime.parse(item['completedAt'])
+            : null,
       );
     }).toList();
   }
@@ -54,3 +58,4 @@ class StorageService {
     return {'sessions': sessions, 'focusSeconds': focusSeconds};
   }
 }
+ 
