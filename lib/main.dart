@@ -199,6 +199,8 @@ class _HomeScreenState extends State<HomeScreen> {
           totalFocusSeconds += 25 * 60;
         });
 
+        final messenger = ScaffoldMessenger.of(context);
+
         await _storageService.saveFocusStats(
           sessions: completedFocusSessions,
           focusSeconds: totalFocusSeconds,
@@ -208,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return;
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('Focus session completed! 🎉')),
         );
       }
@@ -335,9 +337,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   tasks.removeAt(index);
                 });
 
+                final navigator = Navigator.of(context);
+
                 await _storageService.saveTasks(tasks);
 
-                Navigator.pop(context);
+                if (!mounted) {
+                  return;
+                }
+
+                navigator.pop();
               },
               child: const Text('DELETE'),
             ),
@@ -462,7 +470,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       body: selectedIndex == 0
           ? SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -696,7 +704,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
