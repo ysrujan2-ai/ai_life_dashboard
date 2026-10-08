@@ -37,24 +37,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final StorageService _storageService = StorageService();
-  final List<Task> tasks = [
-    Task(
-      title: 'Learn Java Arrays',
-      category: 'Study',
-      completed: true,
-      completedAt: DateTime.now(),
-    ),
-    Task(title: 'Solve 2 DSA Problems', category: 'Study', completed: false),
-    Task(title: 'Work on Project', category: 'Project', completed: false),
-    Task(title: 'Exercise', category: 'Health', completed: false),
-    Task(
-      title: 'Read 20 Pages',
-      category: 'Study',
-      completed: true,
-      completedAt: DateTime.now(),
-    ),
-    Task(title: 'Meditation', category: 'Health', completed: false),
-  ];
+  final List<Task> tasks = [];
 
   @override
   void initState() {
@@ -79,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> loadSavedTasks() async {
     final savedTasks = await _storageService.loadTasks();
 
-    if (!mounted || savedTasks.isEmpty) {
+    if (!mounted) {
       return;
     }
 
@@ -550,14 +533,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             const SizedBox(height: 12),
 
                             const Text(
-                              '🔥 4 Day Streak',
+                              '0 Day Streak',
                               style: TextStyle(color: Colors.orangeAccent),
                             ),
 
                             const SizedBox(height: 6),
 
                             const Text(
-                              '⚡ Level 7',
+                              '⚡ Level 1',
                               style: TextStyle(color: Colors.amberAccent),
                             ),
                           ],
